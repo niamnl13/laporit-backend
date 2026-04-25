@@ -11,16 +11,23 @@ class Report extends Model
 
     protected $fillable = [
         'user_id',
+        'operator_id',
         'jenis_kerusakan',
         'deskripsi',
         'lokasi',
         'foto',
         'status',
+        'priority',
         'tgl_eksekusi',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function operator()
+    {
+        return $this->belongsTo(User::class, 'operator_id');
     }
 }
