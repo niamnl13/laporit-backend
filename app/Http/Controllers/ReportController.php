@@ -26,6 +26,7 @@ class ReportController extends Controller
             'deskripsi'       => 'required|string',
             'lokasi'          => 'nullable|string',
             'foto'            => 'nullable|image|max:2048',
+            'priority'        => 'nullable|in:rendah,normal,tinggi,gawat',
         ]);
 
         $fotoPath = null;
@@ -40,6 +41,7 @@ class ReportController extends Controller
             'lokasi'          => $request->lokasi,
             'foto'            => $fotoPath,
             'status'          => 'pending',
+            'priority'        => $request->priority ?? 'normal',
         ]);
 
         return response()->json([
@@ -72,6 +74,13 @@ class ReportController extends Controller
             'tgl_eksekusi' => $request->tgl_eksekusi,
         ]);
 
+        // Kalau operator ambil tugas, simpan operator_id
+        if ($request->status === 'proses') {
+            $updateData['operator_id'] = $request->user()->id;
+        }
+
+        $report->update($updateData);
+        
         return response()->json([
             'success' => true,
             'message' => 'Status laporan diperbarui!',
