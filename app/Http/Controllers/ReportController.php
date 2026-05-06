@@ -37,6 +37,8 @@ class ReportController extends Controller
         $report = Report::create([
             'user_id' => $request->user()->id,
             'jenis_kerusakan' => $request->jenis_kerusakan,
+            'judul'           => $request->judul,
+            'nub'             => $request->nub,
             'deskripsi'       => $request->deskripsi,
             'lokasi'          => $request->lokasi,
             'foto'            => $fotoPath,
@@ -69,10 +71,10 @@ class ReportController extends Controller
             'tgl_eksekusi' => 'nullable|date',
         ]);
 
-        $report->update([
+        $updateData = [
             'status'       => $request->status,
             'tgl_eksekusi' => $request->tgl_eksekusi,
-        ]);
+        ];
 
         // Kalau operator ambil tugas, simpan operator_id
         if ($request->status === 'proses') {

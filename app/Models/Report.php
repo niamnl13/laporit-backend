@@ -12,6 +12,8 @@ class Report extends Model
     protected $fillable = [
         'user_id',
         'operator_id',
+        'judul',
+        'nub',
         'jenis_kerusakan',
         'deskripsi',
         'lokasi',
