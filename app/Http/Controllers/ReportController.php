@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Notification;
 
 class ReportController extends Controller
 {
@@ -46,6 +47,17 @@ class ReportController extends Controller
             'priority'        => $request->priority ?? 'normal',
         ]);
 
+        // Buat notifikasi untuk semua operator IT
+        $operators = \App\Models\User::where('role', 'operator')->get();
+        foreach ($operators as $operator) {
+            \App\Models\Notification::create([
+                'user_id' => $operator->id,
+                'judul'   => 'Laporan Baru Masuk',
+                'pesan'   => 'Ada laporan baru dari ' . $request->user()->name . ': ' . $request->jenis_kerusakan,
+                'tipe'    => 'tugas',
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Laporan berhasil dikirim!',
@@ -63,9 +75,24 @@ class ReportController extends Controller
         ]);
     }
 
+    // Operator: lihat laporan yang ditugaskan ke dirinya dan masih dalam proses
+    public function myTasks(Request $request)
+    {
+        $reports = Report::with('user')
+            ->where('operator_id', $request->user()->id)
+            ->where('status', 'proses')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $reports
+        ]);
+    }
+
     // Operator & Admin: update status laporan
     public function updateStatus(Request $request, Report $report)
-    {
+    { 
         $request->validate([
             'status'       => 'required|in:pending,proses,selesai,ditolak',
             'tgl_eksekusi' => 'nullable|date',
@@ -83,6 +110,24 @@ class ReportController extends Controller
 
         $report->update($updateData);
         
+        // Buat notifikasi untuk operator jika laporan sudah selesai
+        if ($request->status === 'selesai' && $report->operator_id) {
+            \App\Models\Notification::create([
+                'user_id' => $report->operator_id,
+                'judul'   => 'Laporan Dikonfirmasi Selesai',
+                'pesan'   => 'Laporan #' . $report->id . ' (' . $report->jenis_kerusakan . ') telah dikonfirmasi selesai oleh admin.',
+                'tipe'    => 'informasi',
+            ]);
+        }
+
+        // Buat notifikasi untuk user yang buat laporan
+        Notification::create([
+            'user_id' => $report->user_id,
+            'judul'   => 'Status Laporan Diperbarui',
+            'pesan'   => 'Laporan #' . $report->id . ' (' . $report->jenis_kerusakan . ') statusnya berubah menjadi ' . $request->status,
+            'tipe'    => 'status',
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Status laporan diperbarui!',
